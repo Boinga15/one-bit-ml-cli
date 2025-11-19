@@ -1,0 +1,1 @@
+This project will be a showcase of various self-implemented one-bit ML models, both the regular 1-bit method and the 1.58-BitNet style. Most of the data parsing will be done in Python, while the actual Machine Learning calls for the 1-bit and 1.58-BitNet models will be done in Rust.

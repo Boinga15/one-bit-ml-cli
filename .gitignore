@@ -1,0 +1,9 @@
+# Python
+python/venv
+python/__pycache__/
+
+# Rust
+rust-core/target/
+
+# Others
+.vscode/
