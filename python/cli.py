@@ -18,3 +18,7 @@ if __name__ == "__main__":
     embedding = PositionalEmbedding(vocabSize, 12)
     result = embedding.call(tokensTf)
     print(result)
+
+    addAndNormalize = AddAndNormalize()
+    result = addAndNormalize.call([result, result])
+    print(result)

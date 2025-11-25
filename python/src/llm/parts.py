@@ -32,3 +32,12 @@ class PositionalEmbedding(tf.keras.layers.Layer):
         x = x + self.posEncoding[tf.newaxis, :length, :]
 
         return x
+
+
+class AddAndNormalize(tf.keras.layers.Layer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.layerNorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+    
+    def call(self, inputs):
+        return self.layerNorm(tf.add_n(inputs))
