@@ -62,7 +62,7 @@ class ScaledDotProductAttention(tf.keras.layers.Layer):
 
 
 class MultiHeadedAttention(tf.keras.layers.Layer):
-    def __init__(self, h, dModel, valueDimension, **kwargs):
+    def __init__(self, h, dModel, **kwargs):
         super().__init__(**kwargs)
         self.h = h
         self.dModel = dModel
@@ -119,3 +119,27 @@ class FFN(tf.keras.layers.Layer):
     
     def call(self, x):
         return self.layer_2(tf.keras.activations.gelu(self.layer_1(x)))
+
+
+class Decoder(tf.keras.layers.Layer):
+    def __init__(self, dModel, numHeads, ffnInnerSize, **kwargs):
+        super().__init__(**kwargs)
+
+        self.dModel = dModel
+        self.ffnInnerSize = ffnInnerSize
+
+        self.norm_1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self.mha = MultiHeadedAttention(numHeads, dModel)
+        self.norm_2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self.ffn = FFN(dModel, ffnInnerSize)
+    
+    def call(self, inputs):
+        x, mask = inputs
+
+        norm_1 = self.norm_1(x)
+        mha_1 = x + self.mha([norm_1, norm_1, norm_1, mask])
+
+        norm_2 = self.norm_2(mha_1)
+        ffn_final = mha_1 + self.ffn(norm_2)
+
+        return ffn_final
