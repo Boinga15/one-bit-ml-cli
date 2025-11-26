@@ -106,3 +106,16 @@ class MultiHeadedAttention(tf.keras.layers.Layer):
 
         # Return the result of the final linear layer.
         return self.finalLinearLayer(context)
+
+
+class FFN(tf.keras.layers.Layer):
+    def __init__(self, dModel, insideDimension, **kwrags):
+        super().__init__(**kwrags)
+        self.dModel = dModel
+        self.insideDimension = insideDimension
+
+        self.layer_1 = tf.keras.layers.Dense(self.insideDimension)
+        self.layer_2 = tf.keras.layers.Dense(self.dModel)
+    
+    def call(self, x):
+        return self.layer_2(tf.keras.activations.gelu(self.layer_1(x)))

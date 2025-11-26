@@ -16,9 +16,13 @@ if __name__ == "__main__":
     tokensTf = tf.convert_to_tensor(tokens, dtype=tf.int32)
 
     embedding = PositionalEmbedding(vocabSize, 12)
-    result = embedding.call(tokensTf)
+    result = embedding(tokensTf)
     print(result)
 
     addAndNormalize = AddAndNormalize()
-    result = addAndNormalize.call([result, result])
+    result = addAndNormalize([result, result])
+    print(result)
+
+    ffn = FFN(768, 3072)
+    result = ffn(result)
     print(result)
