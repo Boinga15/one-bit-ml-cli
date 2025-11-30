@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 pyo3 = { version = "0.27.1", features = ["extension-module"] }
+nalgebra = "0.34.1"
