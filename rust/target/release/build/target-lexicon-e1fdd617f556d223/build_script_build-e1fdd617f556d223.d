@@ -1,8 +1,0 @@
-C:\Users\conta\Desktop\Coding\Multi-Language\1-Bit Image Parser (Rust + Python)\rust-core\target\release\build\target-lexicon-e1fdd617f556d223\build_script_build-e1fdd617f556d223.d: C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\build.rs C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/data_model.rs C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/triple.rs C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/targets.rs
-
-C:\Users\conta\Desktop\Coding\Multi-Language\1-Bit Image Parser (Rust + Python)\rust-core\target\release\build\target-lexicon-e1fdd617f556d223\build_script_build-e1fdd617f556d223.exe: C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\build.rs C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/data_model.rs C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/triple.rs C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/targets.rs
-
-C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\build.rs:
-C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/data_model.rs:
-C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/triple.rs:
-C:\Users\conta\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-lexicon-0.13.3\src/targets.rs:
