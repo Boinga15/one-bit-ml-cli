@@ -511,3 +511,49 @@ impl MultiHeadAttention {
         self.final_linear.adjust_parameters(learning_rate);
     }
 }
+
+
+pub struct Decoder {
+    pub norm_1: LayerNorm,
+    pub norm_2: LayerNorm,
+    pub mha: MultiHeadAttention,
+    pub ffn: FFN
+}
+
+impl Decoder {
+    pub fn new(d_model: usize, number_of_heads: usize, ffn_inner_size: usize) -> Decoder {
+        Decoder {
+            norm_1: LayerNorm::new(1.0),
+            norm_2: LayerNorm::new(1.0),
+            mha: MultiHeadAttention::new(d_model, number_of_heads),
+            ffn: FFN::new(d_model, ffn_inner_size)
+        }
+    }
+
+    pub fn calculate(&mut self, input: DMatrix<f64>, mask: DMatrix<f64>) -> DMatrix<f64> {
+        let normal_matrix_1: DMatrix<f64> = self.norm_1.calculate(input.clone());
+        let mha_result: DMatrix<f64> = input + self.mha.calculate(normal_matrix_1.clone(), normal_matrix_1.clone(), normal_matrix_1.clone(), mask);
+
+        let normal_matrix_2: DMatrix<f64> = self.norm_2.calculate(mha_result);
+        let ffn_result: DMatrix<f64> = self.ffn.calculate(normal_matrix_2);
+
+        ffn_result
+    }
+
+    pub fn calculate_gradients(&mut self, previous_gradient: DMatrix<f64>) -> DMatrix<f64> {
+        let ffn_output_gradient: DMatrix<f64> = self.ffn.calculate_gradients(previous_gradient.clone());
+        let normal_2_gradients: DMatrix<f64> = self.norm_2.calculate_gradients(ffn_output_gradient);
+        
+        let mha_gradients: (DMatrix<f64>, DMatrix<f64>, DMatrix<f64>) = self.mha.calculate_gradients(normal_2_gradients);
+        let normal_1_gradients: DMatrix<f64> = self.norm_1.calculate_gradients(mha_gradients.0 + mha_gradients.1 + mha_gradients.2);
+        
+        normal_1_gradients + previous_gradient
+    }
+
+    pub fn adjust_parameters(&mut self, learning_rate: f64) {
+        self.norm_1.adjust_parameters(learning_rate);
+        self.norm_2.adjust_parameters(learning_rate);
+        self.ffn.adjust_parameters(learning_rate);
+        self.mha.adjust_parameters(learning_rate);
+    }
+}
