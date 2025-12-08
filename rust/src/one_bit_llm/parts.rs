@@ -557,3 +557,33 @@ impl Decoder {
         self.mha.adjust_parameters(learning_rate);
     }
 }
+
+
+pub struct PositionalEmbedding {
+    pub parameters: DMatrix<f64>,
+    pub parameter_gradients: DMatrix<f64>
+}
+
+impl PositionalEmbedding {
+    pub fn new(sequence_length: usize, dimension_size: usize) -> PositionalEmbedding{
+        PositionalEmbedding {
+            parameters: DMatrix::new_random(dimension_size, sequence_length),
+            parameter_gradients: DMatrix::from_element(dimension_size, sequence_length, 0.0)
+        }
+    }
+    
+    pub fn calculate(&mut self, input: DMatrix<f64>) -> DMatrix<f64> {
+        input + &self.parameters
+    }
+}
+
+impl Layer for PositionalEmbedding {
+    fn calculate_gradients(&mut self, previous_gradient: DMatrix<f64>) -> DMatrix<f64> {
+        self.parameter_gradients = previous_gradient.clone();
+        return previous_gradient;
+    }
+    
+    fn adjust_parameters(&mut self, learning_rate: f64) {
+        self.parameters -= learning_rate * &self.parameter_gradients;
+    }
+}
