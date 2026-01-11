@@ -7,3 +7,4 @@ edition = "2024"
 rand = "0.8"
 pyo3 = { version = "0.27.1", features = ["extension-module"] }
 nalgebra = { version = "0.34.1", features = ["rand"] }
+num-traits = "0.2.19"

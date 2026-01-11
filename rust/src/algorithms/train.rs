@@ -1,6 +1,8 @@
 use std::{fs::File, io::{Read, Seek, SeekFrom}};
 use nalgebra::*;
 
+use crate::one_bit_llm::parts::LLM;
+
 pub fn load_tokens() -> Vec<u8> {
     // Commented for testing purposes. The below code block only extracts the first 16 MB of data.
     // let data = fs::read("../../dataset/tokens.bin").expect("Failed to read file.");
@@ -31,4 +33,68 @@ pub fn one_hot_encoding(data: Vec<usize>) -> DMatrix<f64> {
     }
 
     result
+}
+
+pub fn train(mut model: LLM, training_data: Vec<usize>) {
+    // Constants that can be edited to vary the training process.
+    const EPOCH_COUNT: usize = 100;
+    const BATCH_COUNT_PER_EPOCH: usize = 64;
+    const LEARNING_RATE: f64 = 0.0002;
+    const SEQUENCE_LENGTH: usize = 256;
+
+    let vocabulary_size = *training_data.iter().max().unwrap();
+
+    // Batch processing
+    let mut current_batch_index: usize = 0;
+
+    fn generate_batch (current_batch_index: usize, training_data: &Vec<usize>) -> (DMatrix<usize>, usize, usize) {
+        let mut target_index = current_batch_index + SEQUENCE_LENGTH;
+
+        if target_index >= training_data.len() {
+            target_index -= training_data.len();
+        }
+
+        let mut extracted_data: Vec<usize> = vec![0; SEQUENCE_LENGTH];
+        
+        for i in 0..(SEQUENCE_LENGTH - 1) {
+            //print!("{}, {}, {}", target_index, i, SEQUENCE_LENGTH);
+            extracted_data[i] = training_data[target_index + i - SEQUENCE_LENGTH];
+        }
+
+        let mut encoded_data: DMatrix<usize> = DMatrix::from_element(1, training_data.len() - 1, 0);
+
+        for i in 0..(training_data.len() - 1) {
+            encoded_data[(0, i)] = training_data[i];
+        }
+
+        (encoded_data, training_data[training_data.len() - 1], target_index)
+    }
+
+    // Training algorithm.
+    for epoch in 0..EPOCH_COUNT {
+        let mut epoch_loss: f64 = 0.0;
+        for _ in 0..BATCH_COUNT_PER_EPOCH {
+            let batch_info = generate_batch(current_batch_index, &training_data);
+            current_batch_index = batch_info.2;
+
+            let model_result: DMatrix<f64> = model.calculate(batch_info.0);
+            
+            let mut target: DMatrix<f64> = DMatrix::from_element(1, vocabulary_size, 0.0);
+            let mut loss_gradients: DMatrix<f64> = DMatrix::from_element(1, vocabulary_size, 1.0);
+
+            target[(0, batch_info.1)] = 1.0;
+            loss_gradients[(0, batch_info.1)] = -1.0;
+
+            let loss: DMatrix<f64> = (target - model_result).abs();
+            epoch_loss += loss.sum();
+
+            model.calculate_gradients(loss_gradients);
+            model.adjust_parameters(LEARNING_RATE);
+        }
+
+        epoch_loss /= BATCH_COUNT_PER_EPOCH as f64;
+
+        print!("Epoch {} complete.", epoch);
+        print!("Loss: {}", epoch_loss)
+    }
 }
