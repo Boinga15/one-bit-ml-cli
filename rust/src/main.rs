@@ -20,6 +20,6 @@ fn main() {
     matrix_1.set(0, 2, 6.0);
     matrix_1.display();
 
-    let matrix_3: Matrix<f32> = matrix_1 / 4.0;
-    matrix_3.display();
+    let matrix_2: Matrix<f32> = matrix_1.col_softmax();
+    matrix_2.display();
 }

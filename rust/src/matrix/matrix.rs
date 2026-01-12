@@ -1,13 +1,13 @@
 use std::fmt::Debug;
 
 use std::ops::{Add, Sub, Mul, Div};
-use num_traits::{Num, Pow};
+use num_traits::{Num, Pow, Float};
 
-pub trait Numeric: Num + Clone + Debug + Default + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> + Pow<Self, Output = Self> {}
+pub trait Numeric: Num + Clone + Debug + Default + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> + Pow<Self, Output = Self> + Float {}
 
 impl<T> Numeric for T
 where 
-    T: Num + Clone + Debug + Default + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> + Pow<Self, Output = Self>,
+    T: Num + Clone + Debug + Default + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> + Pow<Self, Output = Self> + Float,
 {
 
 }
@@ -21,6 +21,7 @@ pub struct Matrix<T: Numeric> {
 
 
 impl<T: Numeric> Matrix<T> {
+    // Generation Functions
     pub fn new(rows: usize, cols: usize, init_val: T) -> Matrix<T> {
         Matrix {
             rows: rows,
@@ -29,6 +30,8 @@ impl<T: Numeric> Matrix<T> {
         }
     }
 
+
+    // Helper Functions
     pub fn get(&self, row: usize, col: usize) -> T {
         self.data[col + row * self.cols].clone()
     }
@@ -73,6 +76,203 @@ impl<T: Numeric> Matrix<T> {
 
         for i in 0..self.data.len() {
             data.push(self.data[i].clone().pow(other.data[i].clone()));
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+
+    // Matrix Manipulation
+    pub fn transpose(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for row in 0..self.rows {
+            for col in 0..self.cols {
+                data.push(self.get(col, row));
+            }
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+
+    // Element-wise Functions
+    pub fn element_mult(&self, other: Matrix<T>) -> Matrix<T> {
+        if self.rows != other.rows || self.cols != other.cols {
+            println!("ERROR ENCOUNTERED - Multiplying two matrices element-wise.");
+            println!("Dimension mismatch: ({}, {}) + ({}, {})", self.rows, self.cols, other.rows, other.cols);
+            return Matrix {
+                rows: self.rows,
+                cols: self.cols,
+                data: vec![]
+            }; // Fallback option.
+        }
+
+        let mut data: Vec<T> = vec![];
+
+        for i in 0..self.data.len() {
+            data.push(self.data[i].clone() * other.data[i].clone());
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+    // Standard Trigonometric Functions
+    pub fn sin(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for i in 0..self.data.len() {
+            data.push(self.data[i].clone().sin());
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+    pub fn cos(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for i in 0..self.data.len() {
+            data.push(self.data[i].clone().cos());
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+    pub fn tan(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for i in 0..self.data.len() {
+            data.push(self.data[i].clone().tan());
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+
+    // Hyperbolic Functions
+    pub fn sinh(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for i in 0..self.data.len() {
+            data.push(self.data[i].clone().sinh());
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+    pub fn cosh(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for i in 0..self.data.len() {
+            data.push(self.data[i].clone().cosh());
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+    pub fn tanh(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for i in 0..self.data.len() {
+            data.push(self.data[i].clone().tanh());
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+
+    // Normalization Functions
+    pub fn softmax(&self) -> Matrix<T> {
+        let mut total: T = T::default();
+
+        for element in self.data.iter() {
+            total = total + element.clone();
+        }
+
+        let mut data: Vec<T> = vec![];
+
+        for i in 0..self.data.len() {
+            data.push(self.data[i].clone() / total);
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+    pub fn row_softmax(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for row in 0..self.rows {
+            let mut total: T = T::default();
+
+            for col in 0..self.cols {
+                total = total + self.get(row, col);
+            }
+
+            for col in 0..self.cols {
+                data.push(self.get(row, col).clone() / total);
+            }
+        }
+
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data: data
+        }
+    }
+
+    pub fn col_softmax(&self) -> Matrix<T> {
+        let mut data: Vec<T> = vec![];
+
+        for col in 0..self.cols {
+            let mut total: T = T::default();
+
+            for row in 0..self.rows {
+                total = total + self.get(row, col);
+            }
+
+            for row in 0..self.rows {
+                data.push(self.get(row, col).clone() / total);
+            }
         }
 
         Matrix {
