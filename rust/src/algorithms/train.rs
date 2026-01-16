@@ -1,7 +1,7 @@
 use std::{fs::File, io::{Read, Seek, SeekFrom}};
 use nalgebra::*;
 
-use crate::one_bit_llm::parts::LLM;
+use crate::one_bit_llm::parts::{FFN, Layer};
 
 pub fn load_tokens() -> Vec<u8> {
     // Commented for testing purposes. The below code block only extracts the first 16 MB of data.
@@ -35,7 +35,7 @@ pub fn one_hot_encoding(data: Vec<usize>) -> DMatrix<f64> {
     result
 }
 
-pub fn train(mut model: LLM, training_data: Vec<usize>) {
+pub fn train(mut model: FFN, training_data: Vec<usize>) {
     // Constants that can be edited to vary the training process.
     const EPOCH_COUNT: usize = 100;
     const BATCH_COUNT_PER_EPOCH: usize = 64;
@@ -77,7 +77,7 @@ pub fn train(mut model: LLM, training_data: Vec<usize>) {
             let batch_info = generate_batch(current_batch_index, &training_data);
             current_batch_index = batch_info.2;
 
-            let model_result: DMatrix<f64> = model.calculate(batch_info.0);
+            let model_result: DMatrix<f64> = model.compute(batch_info.0, true);
             
             let mut target: DMatrix<f64> = DMatrix::from_element(1, vocabulary_size, 0.0);
             let mut loss_gradients: DMatrix<f64> = DMatrix::from_element(1, vocabulary_size, 1.0);

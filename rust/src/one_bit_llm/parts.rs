@@ -78,3 +78,37 @@ impl Layer for Dense {
         self.biases = self.biases.clone() - self.biases_gradients.clone().unwrap() * learning_rate;
     }
 }
+
+
+pub struct FFN {
+    pub inner_dense: Dense,
+    pub outer_dense: Dense
+}
+
+impl FFN {
+    pub fn new(input_size: usize, inner_size: usize, parameter_min: f32, parameter_max: f32) -> FFN {
+        FFN {
+            inner_dense: Dense::new(inner_size, input_size, parameter_min, parameter_max),
+            outer_dense: Dense::new(input_size, inner_size, parameter_min, parameter_max)
+        }
+    }
+
+
+    pub fn compute(&mut self, input: Matrix<f32>, handle_gradients: bool) -> Matrix<f32> {
+        let result_1: Matrix<f32> = self.inner_dense.compute(input, handle_gradients);
+        self.outer_dense.compute(result_1, handle_gradients)
+    }
+}
+
+impl Layer for FFN {
+    fn calculate_gradients(&mut self, previous_gradients: Vec<Matrix<f32>>) -> Vec<Matrix<f32>> {
+        let result_1: Vec<Matrix<f32>> = self.outer_dense.calculate_gradients(previous_gradients);
+        self.inner_dense.calculate_gradients(result_1)
+    }
+
+
+    fn adjust_parameters(&mut self, learning_rate: f32) {
+        self.inner_dense.adjust_parameters(learning_rate);
+        self.outer_dense.adjust_parameters(learning_rate);
+    }
+}
