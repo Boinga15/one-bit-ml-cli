@@ -1,4 +1,4 @@
-use std::{f32::consts::PI};
+use std::f32::{consts::PI};
 
 use rand::Rng;
 
@@ -63,7 +63,7 @@ impl Dense {
 impl Layer for Dense {
     fn calculate_gradients(&mut self, previous_gradients: Vec<Matrix<f32>>) -> Vec<Matrix<f32>> {
         if self.previous_input.is_none() {
-            println!("Dense Error - Previos input is none.");
+            println!("Dense Error - Previous input is none.");
             return vec![];
         }
 
@@ -105,7 +105,7 @@ impl GELU {
 impl Layer for GELU {
     fn calculate_gradients(&mut self, previous_gradients: Vec<Matrix<f32>>) -> Vec<Matrix<f32>> {
         if self.previous_input.is_none() {
-            println!("GELU Error - Previos input is none.");
+            println!("GELU Error - Previous input is none.");
             return vec![];
         }
 
@@ -159,5 +159,115 @@ impl Layer for FFN {
     fn adjust_parameters(&mut self, learning_rate: f32) {
         self.inner_dense.adjust_parameters(learning_rate);
         self.outer_dense.adjust_parameters(learning_rate);
+    }
+}
+
+
+pub struct LayerNorm {
+    pub weights: Matrix<f32>,
+    pub weights_gradients: Option<Matrix<f32>>,
+
+    pub biases: Matrix<f32>,
+    pub biases_gradients: Option<Matrix<f32>>,
+
+    pub previous_variances: Option<Matrix<f32>>,
+    pub previous_finals: Option<Matrix<f32>>
+}
+
+impl LayerNorm {
+    pub fn new(input_size: usize, dimensions: usize, parameter_min: f32, parameter_max: f32) -> LayerNorm {
+        LayerNorm {
+            weights: generate_parameter(input_size, dimensions, parameter_min, parameter_max),
+            weights_gradients: None,
+            
+            biases: generate_parameter(input_size, dimensions, parameter_min, parameter_max),
+            biases_gradients: None,
+        
+            previous_variances: None,
+            previous_finals: None
+        }
+    }
+
+
+    pub fn compute(&mut self, input: Matrix<f32>, handle_gradients: bool) -> Matrix<f32> {
+        const EPSILLON: f32 = 0.0005;
+
+        let mut means: Matrix<f32> = Matrix::new(input.rows, 1, 0.0);
+
+        for row in 0..input.rows {
+            for col in 0..input.cols {
+                means.set(row, 0, means.get(row, 0) + input.get(row, col));
+            }
+        }
+
+        means = means.clone() / input.cols as f32;
+    
+        let mut variances: Matrix<f32> = Matrix::new(input.rows, 1, 0.0);
+
+        for row in 0..input.rows {
+            for col in 0..input.cols {
+                variances.set(row, 0, variances.get(row, 0) + (input.get(row, col) - means.get(row, 0)).powf(2.0));
+            }
+        }
+
+        variances = variances.clone() / input.cols as f32;
+        
+        let mut normalized_values: Matrix<f32> = Matrix::new(input.rows, 1, 0.0);
+
+        for row in 0..input.rows {
+            for col in 0..input.cols {
+                normalized_values.set(row, col, (input.get(row, col) - means.get(row, 0)) / (variances.get(row, 0) + EPSILLON).sqrt());
+            }
+        }
+
+        if handle_gradients {
+            self.previous_variances = Some(variances.clone());
+            self.previous_finals = Some(normalized_values.clone());
+        }
+
+        self.weights.clone().element_mult(normalized_values) + self.biases.clone()
+    }
+}
+
+impl Layer for LayerNorm {
+    fn calculate_gradients(&mut self, previous_gradients: Vec<Matrix<f32>>) -> Vec<Matrix<f32>> {
+        const EPSILLON: f32 = 0.0005;
+        
+        if self.previous_variances.is_none() {
+            println!("LayerNorm Error - Previous variances are none.");
+            return vec![];
+        } else if self.previous_finals.is_none() {
+            println!("LayerNorm Error - Previous finals are none.");
+            return vec![];
+        }
+
+        self.weights_gradients = Some(self.previous_finals.clone().unwrap().element_mult(previous_gradients[0].clone()));
+        self.biases_gradients = Some(previous_gradients[0].clone());
+
+        let final_gradients: Matrix<f32> = previous_gradients[0].clone().element_mult(self.weights.clone());
+
+        let mut input_gradients: Matrix<f32> = Matrix::new(self.previous_finals.clone().unwrap().rows, self.previous_finals.clone().unwrap().cols, 0.0);
+
+        for row in 0..input_gradients.rows {
+            let mut final_summation: f32 = 0.0;
+            let mut multiplied_final_summation: f32 = 0.0;
+
+            for col in 0..input_gradients.cols {
+                final_summation += final_gradients.get(row, col);
+                multiplied_final_summation += final_gradients.get(row, col) * self.previous_finals.clone().unwrap().get(row, col);
+            }
+
+            for col in 0..input_gradients.cols {
+                input_gradients.set(row, col, (final_gradients.get(row, col) - (1.0 / input_gradients.cols as f32) * final_summation - self.previous_finals.clone().unwrap().get(row, col) * multiplied_final_summation) * 1.0 / (self.previous_variances.clone().unwrap().get(row, 0) + EPSILLON).sqrt());
+            }
+        }
+
+        vec![input_gradients]
+    }
+
+
+    fn adjust_parameters(&mut self, learning_rate: f32) {
+        self.weights = self.weights.clone() - self.weights_gradients.clone().unwrap() * learning_rate;
+        self.biases = self.biases.clone() - self.biases_gradients.clone().unwrap() * learning_rate;
     }
 }
