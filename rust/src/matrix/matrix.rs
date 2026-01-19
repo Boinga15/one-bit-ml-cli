@@ -222,13 +222,13 @@ impl<T: Numeric> Matrix<T> {
         let mut total: T = T::default();
 
         for element in self.data.iter() {
-            total = total + element.clone();
+            total = total + element.clone().exp();
         }
 
         let mut data: Vec<T> = vec![];
 
         for i in 0..self.data.len() {
-            data.push(self.data[i].clone() / total);
+            data.push(self.data[i].clone().exp() / total);
         }
 
         Matrix {
@@ -245,11 +245,11 @@ impl<T: Numeric> Matrix<T> {
             let mut total: T = T::default();
 
             for col in 0..self.cols {
-                total = total + self.get(row, col);
+                total = total + self.get(row, col).exp();
             }
 
             for col in 0..self.cols {
-                data.push(self.get(row, col).clone() / total);
+                data.push(self.get(row, col).clone().exp() / total);
             }
         }
 
@@ -267,11 +267,11 @@ impl<T: Numeric> Matrix<T> {
             let mut total: T = T::default();
 
             for row in 0..self.rows {
-                total = total + self.get(row, col);
+                total = total + self.get(row, col).exp();
             }
 
             for row in 0..self.rows {
-                data.push(self.get(row, col).clone() / total);
+                data.push(self.get(row, col).clone().exp() / total);
             }
         }
 

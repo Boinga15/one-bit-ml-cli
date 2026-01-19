@@ -271,3 +271,68 @@ impl Layer for LayerNorm {
         self.biases = self.biases.clone() - self.biases_gradients.clone().unwrap() * learning_rate;
     }
 }
+
+
+struct ScaledDotProduct {
+    d_model: usize,
+    previous_inputs: Option<Vec<Matrix<f32>>>
+}
+
+impl ScaledDotProduct {
+    pub fn new(d_model: usize) -> ScaledDotProduct {
+        ScaledDotProduct {
+            d_model: d_model,
+            previous_inputs: None
+        }
+    }
+
+    pub fn compute(&mut self, q: Matrix<f32>, k: Matrix<f32>, v: Matrix<f32>, handle_gradients: bool) -> Matrix<f32> {
+        if handle_gradients {
+            self.previous_inputs = Some(vec![q.clone(), k.clone(), v.clone()]);
+        }
+
+        (q.clone() * k.clone().transpose() / (self.d_model as f32).sqrt()).row_softmax() * v.clone()
+    }
+}
+
+impl Layer for ScaledDotProduct {
+    fn calculate_gradients(&mut self, previous_gradients: Vec<Matrix<f32>>) -> Vec<Matrix<f32>> {
+        if self.previous_inputs.is_none() {
+            println!("Scaled Dot Product Error - Previous inputs are none.");
+            return vec![];
+        }
+
+        let q = self.previous_inputs.as_ref().unwrap()[0].clone();
+        let k = self.previous_inputs.as_ref().unwrap()[1].clone();
+        let v = self.previous_inputs.as_ref().unwrap()[2].clone();
+
+        let pre_scaled_values = q.clone() * k.clone().transpose() / (self.d_model as f32).sqrt();
+        let mut pre_scaled_gradients: Matrix<f32> = Matrix::new(pre_scaled_values.rows, pre_scaled_values.cols, 0.0);
+
+        let scaled_value = pre_scaled_values.clone().row_softmax();
+        let scaled_value_gradient = previous_gradients[0].clone() * v.clone().transpose();
+        
+        let v_gradient = scaled_value.transpose() * previous_gradients[0].clone();
+        
+        for row in 0..pre_scaled_values.rows {
+            let mut total: f32 = 0.0;
+            let mut above_total: f32 = 0.0;
+
+            for col in 0..pre_scaled_gradients.cols {
+                total += pre_scaled_values.get(row, col).exp();
+                above_total += pre_scaled_values.get(row, col)
+            }
+
+            for col in 0..pre_scaled_gradients.cols {
+                pre_scaled_gradients.set(row, col, (scaled_value_gradient.get(row, col) * above_total * pre_scaled_values.get(row, col)) / total)
+            }
+        }
+
+        let q_gradient = pre_scaled_gradients.clone() * k / (self.d_model as f32).sqrt();
+        let k_gradient = pre_scaled_gradients.clone().transpose() * q / (self.d_model as f32).sqrt();
+
+        vec![q_gradient, k_gradient, v_gradient]
+    }
+
+    fn adjust_parameters(&mut self, _learning_rate: f32) {}
+}
